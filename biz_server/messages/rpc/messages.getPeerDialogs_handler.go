@@ -27,7 +27,7 @@ import (
 	"github.com/nebulaim/telegramd/biz/core/user"
 	"github.com/nebulaim/telegramd/biz/core/message"
 	"github.com/nebulaim/telegramd/biz/core/chat"
-	"github.com/nebulaim/telegramd/biz/core/updates"
+	update2 "github.com/nebulaim/telegramd/biz/core/update"
 )
 
 // messages.getPeerDialogs#2d9776b9 peers:Vector<InputPeer> = messages.PeerDialogs;
@@ -64,23 +64,24 @@ func (s *MessagesServiceImpl) MessagesGetPeerDialogs(ctx context.Context, reques
 		peerDialogs.SetMessages(message.GetMessagesByPeerAndMessageIdList2(md.UserId, messageIdList))
 	}
 
-	users := user.GetUserList(userIdList)
-	for _, user := range users {
-		if user.GetId() == md.UserId {
-			user.SetSelf(true)
-		} else {
-			user.SetSelf(false)
-		}
-		user.SetContact(true)
-		user.SetMutualContact(true)
-		peerDialogs.Data2.Users = append(peerDialogs.Data2.Users, user.To_User())
-	}
+	users := user.GetUsersBySelfAndIDList(md.UserId, userIdList)
+	peerDialogs.SetUsers(users)
+	//for _, user := range users {
+	//	if user.GetId() == md.UserId {
+	//		user.SetSelf(true)
+	//	} else {
+	//		user.SetSelf(false)
+	//	}
+	//	user.SetContact(true)
+	//	user.SetMutualContact(true)
+	//	peerDialogs.Data2.Users = append(peerDialogs.Data2.Users, user.To_User())
+	//}
 
 	if len(chatIdList) > 0 {
 		peerDialogs.Data2.Chats = chat.GetChatListByIDList(chatIdList)
 	}
 
-	state := updates.GetUpdatesState(md.AuthId, md.UserId)
+	state := update2.GetUpdatesState(md.AuthId, md.UserId)
 	peerDialogs.SetState(state.To_Updates_State())
 
 	glog.Infof("messages.getPeerDialogs#2d9776b9 - reply: %s", logger.JsonDebugData(peerDialogs))

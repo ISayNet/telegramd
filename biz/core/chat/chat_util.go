@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017, https://github.com/nebulaim
+ *  Copyright (c) 2018, https://github.com/nebulaim
  *  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,24 +15,8 @@
  * limitations under the License.
  */
 
-package rpc
+package chat
 
-//import (
-//	"flag"
-//	"github.com/golang/glog"
-//	"net"
-//	"google.golang.org/grpc"
-//	"github.com/nebulaim/telegramd/mtproto"
-//)
-//
-//func DoMainServer() {
-//	flag.Parse()
-//	lis, err := net.Listen("tcp", "localhost:10001")
-//	if err != nil {
-//		glog.Fatalf("failed to listen: %v", err)
-//	}
-//	var opts []grpc.ServerOption
-//	grpcServer := grpc.NewServer(opts...)
-//	mtproto.RegisterRPCHelpServer(grpcServer, &HelpServiceImpl{})
-//	grpcServer.Serve(lis)
-//}
+func CheckChatAccessHash(id int32, hash int64) bool {
+	return true
+}

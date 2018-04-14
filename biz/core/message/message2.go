@@ -30,7 +30,8 @@ import (
 	"encoding/json"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/glog"
-	"github.com/nebulaim/telegramd/biz/core/updates"
+	update2 "github.com/nebulaim/telegramd/biz/core/update"
+	// "github.com/nebulaim/telegramd/biz/core/peer"
 )
 
 const (
@@ -274,7 +275,22 @@ type IDMessage struct {
 // Loadhistory
 func  LoadBackwardHistoryMessages(userId int32, peerType , peerId int32, offset int32, limit int32) (messages []*mtproto.Message) {
 	// TODO(@benqi): chat and channel
-	doList := dao.GetMessagesDAO(dao.DB_SLAVE).SelectBackwardByPeerUserOffsetLimit(userId, peerId, int8(peerType), offset, limit)
+
+	var (
+		doList []dataobject.MessagesDO
+	)
+
+	switch peerType {
+	case base.PEER_USER:
+		// doList = dao.GetMessagesDAO(dao.DB_SLAVE).SelectForwardByPeerUserOffsetLimit(userId, peerId, int8(peerType), offset, limit)
+		doList = dao.GetMessagesDAO(dao.DB_SLAVE).SelectBackwardByPeerUserOffsetLimit(userId, peerId, int8(peerType), offset, limit)
+	case base.PEER_CHAT:
+		// doList = dao.GetMessagesDAO(dao.DB_SLAVE).SelectForwardByPeerOffsetLimit(userId, int8(peerType), peerId, offset, limit)
+		doList = dao.GetMessagesDAO(dao.DB_SLAVE).SelectBackwardByPeerOffsetLimit(userId, int8(peerType), peerId, offset, limit)
+	case base.PEER_CHANNEL:
+	default:
+	}
+
 	glog.Infof("GetMessagesByUserIdPeerOffsetLimit - boxesList: %v", doList)
 	if len(doList) == 0 {
 		messages = []*mtproto.Message{}
@@ -291,7 +307,21 @@ func  LoadBackwardHistoryMessages(userId int32, peerType , peerId int32, offset 
 
 func LoadForwardHistoryMessages(userId int32, peerType , peerId int32, offset int32, limit int32) (messages []*mtproto.Message) {
 	// TODO(@benqi): chat and channel
-	doList := dao.GetMessagesDAO(dao.DB_SLAVE).SelectForwardByPeerUserOffsetLimit(userId, peerId, int8(peerType), offset, limit)
+
+	var (
+		doList []dataobject.MessagesDO
+	)
+
+	switch peerType {
+	case base.PEER_USER:
+		doList = dao.GetMessagesDAO(dao.DB_SLAVE).SelectForwardByPeerUserOffsetLimit(userId, peerId, int8(peerType), offset, limit)
+	case base.PEER_CHAT:
+		doList = dao.GetMessagesDAO(dao.DB_SLAVE).SelectForwardByPeerOffsetLimit(userId, int8(peerType), peerId, offset, limit)
+	case base.PEER_CHANNEL:
+	default:
+	}
+
+
 	glog.Infof("GetMessagesByUserIdPeerOffsetLimit - boxesList: %v", doList)
 	if len(doList) == 0 {
 		messages = []*mtproto.Message{}
@@ -385,7 +415,7 @@ func SendMessageToOutbox(fromId int32, peer *base.PeerUtil, clientRandomId int64
 	now := int32(time.Now().Unix())
 	messageDO := &dataobject.MessagesDO{
 		UserId:fromId,
-		UserMessageBoxId: int32(updates.NextMessageBoxId(base2.Int32ToString(fromId))),
+		UserMessageBoxId: int32(update2.NextMessageBoxId(base2.Int32ToString(fromId))),
 		DialogMessageId: base.NextSnowflakeId(),
 		SenderUserId: fromId,
 		MessageBoxType: MESSAGE_BOX_TYPE_OUTGOING,
@@ -449,7 +479,7 @@ func sendUserMessageToInbox(fromId int32, peer *base.PeerUtil, clientRandomId, d
 	now := int32(time.Now().Unix())
 	messageDO := &dataobject.MessagesDO{
 		UserId:peer.PeerId,
-		UserMessageBoxId: int32(updates.NextMessageBoxId(base2.Int32ToString(peer.PeerId))),
+		UserMessageBoxId: int32(update2.NextMessageBoxId(base2.Int32ToString(peer.PeerId))),
 		DialogMessageId: dialogMessageId,
 		SenderUserId: fromId,
 		MessageBoxType: MESSAGE_BOX_TYPE_INCOMING,

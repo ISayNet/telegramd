@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017, https://github.com/nebulaim
+ *  Copyright (c) 2018, https://github.com/nebulaim
  *  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,24 +15,21 @@
  * limitations under the License.
  */
 
-package rpc
+package account
 
 import (
-	"flag"
-	"github.com/golang/glog"
-	"github.com/nebulaim/telegramd/mtproto"
-	"google.golang.org/grpc"
-	"net"
+	"github.com/nebulaim/telegramd/biz/dal/dataobject"
+	"github.com/nebulaim/telegramd/biz/dal/dao"
 )
 
-func DoMainServer() {
-	flag.Parse()
-	lis, err := net.Listen("tcp", "localhost:10001")
-	if err != nil {
-		glog.Fatalf("failed to listen: %v", err)
+func InsertReportData(userId, peerType, peerId, reason int32, text string) bool {
+	do := &dataobject.ReportsDO{
+		UserId: userId,
+		PeerType: peerType,
+		PeerId: peerId,
+		Reason: int8(reason),
+		Content: text,
 	}
-	var opts []grpc.ServerOption
-	grpcServer := grpc.NewServer(opts...)
-	mtproto.RegisterRPCChannelsServer(grpcServer, &ChannelsServiceImpl{})
-	grpcServer.Serve(lis)
+	do.Id = dao.GetReportsDAO(dao.DB_MASTER).Insert(do)
+	return do.Id > 0
 }

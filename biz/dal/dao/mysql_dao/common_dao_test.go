@@ -15,24 +15,25 @@
  * limitations under the License.
  */
 
-package rpc
+package mysql_dao
 
 import (
-	"flag"
-	"github.com/golang/glog"
-	"github.com/nebulaim/telegramd/mtproto"
-	"google.golang.org/grpc"
-	"net"
+	"fmt"
+	"strings"
+	"testing"
 )
 
-func DoMainServer() {
-	flag.Parse()
-	lis, err := net.Listen("tcp", "localhost:10001")
-	if err != nil {
-		glog.Fatalf("failed to listen: %v", err)
+func TestCheckExists(t *testing.T) {
+	params := make(map[string]interface{})
+	params["username"] = "n1"
+	params["username2"] = "n2"
+
+	names := make([]string, 0, len(params))
+	fmt.Println(len(names))
+	for k, v := range params {
+		names = append(names, k+" = :"+k)
+		fmt.Println("k: ", k, ", v: ", v)
 	}
-	var opts []grpc.ServerOption
-	grpcServer := grpc.NewServer(opts...)
-	mtproto.RegisterRPCStickersServer(grpcServer, &StickersServiceImpl{})
-	grpcServer.Serve(lis)
+	sql := fmt.Sprintf("SELECT 1 FROM users WHERE %s LIMIT 1", strings.Join(names, " AND "))
+	fmt.Println("checkExists - sql: {", sql, "}, params: ", params)
 }

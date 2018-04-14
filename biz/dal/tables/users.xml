@@ -10,12 +10,12 @@
     </operation>
     <operation name="SelectByPhoneNumber">
         <sql>
-            SELECT id, access_hash, first_name, last_name, username, banned FROM users WHERE phone=:phone limit 1
+            SELECT id, access_hash, first_name, last_name, username, banned, photos FROM users WHERE phone=:phone limit 1
         </sql>
     </operation>
     <operation name="SelectById">
         <sql>
-            SELECT id, access_hash, first_name, last_name, username, phone FROM users WHERE id=:id limit 1
+            SELECT id, access_hash, first_name, last_name, username, phone, photos FROM users WHERE id=:id limit 1
         </sql>
     </operation>
     <operation name="SelectUsersByIdList" result_set="list">
@@ -23,12 +23,24 @@
             <param name="id_list" type="[]int32" />
         </params>
         <sql>
-            SELECT id, access_hash, first_name, last_name, username, phone FROM users WHERE id in (:id_list)
+            SELECT id, access_hash, first_name, last_name, username, phone, photos FROM users WHERE id in (:id_list)
         </sql>
     </operation>
+
     <operation name="SelectByQueryString" result_set="list">
         <sql>
-            SELECT id, access_hash, first_name, last_name, username, phone FROM users WHERE username = :username OR first_name = :first_name OR last_name = :last_name OR phone = :phone limit 20
+            SELECT id, access_hash, first_name, last_name, username, phone, photos FROM users WHERE username = :username OR first_name = :first_name OR last_name = :last_name OR phone = :phone limit 20
+        </sql>
+    </operation>
+
+    <operation name="SearchByQueryNotIdList" result_set="list">
+        <params>
+            <param name="id_list" type="[]int32" />
+            <param name="limit" type="int32" />
+            <param name="q2" type="string" />
+        </params>
+        <sql>
+            SELECT id FROM users WHERE username LIKE :q2 AND id NOT IN(:id_list) LIMIT :limit
         </sql>
     </operation>
 
@@ -52,9 +64,52 @@
         </sql>
     </operation>
 
+    <operation name="UpdateFirstAndLastName">
+        <sql>
+            UPDATE users SET first_name = :first_name, last_name = :last_name WHERE id=:id
+        </sql>
+    </operation>
+
+    <operation name="UpdateAbout">
+        <sql>
+            UPDATE users SET about = :about WHERE id=:id
+        </sql>
+    </operation>
+
     <operation name="UpdateProfile">
         <sql>
             UPDATE users SET first_name = :first_name, last_name = :last_name, about = :about WHERE id=:id
         </sql>
     </operation>
+
+    <operation name="SelectByUsername">
+        <sql>
+            SELECT id FROM users WHERE username=:username LIMIT 1
+        </sql>
+    </operation>
+
+    <operation name="SelectAccountDaysTTL">
+        <sql>
+            SELECT account_days_ttl FROM users WHERE id=:id
+        </sql>
+    </operation>
+
+    <operation name="UpdateAccountDaysTTL">
+        <sql>
+            UPDATE users SET account_days_ttl = :account_days_ttl WHERE id=:id
+        </sql>
+    </operation>
+
+    <operation name="SelectProfilePhotos">
+        <sql>
+            SELECT photos FROM users WHERE id=:id
+        </sql>
+    </operation>
+
+    <operation name="UpdateProfilePhotos">
+        <sql>
+            UPDATE users SET photos = :photos WHERE id=:id
+        </sql>
+    </operation>
+
 </table>

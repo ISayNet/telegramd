@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017, https://github.com/nebulaim
+ *  Copyright (c) 2018, https://github.com/nebulaim
  *  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,15 +18,10 @@
 package dataobject
 
 type UserPrivacysDO struct {
-	Id              int32  `db:"id"`
-	UserId          int32  `db:"user_id"`
-	Password        string `db:"password"`
-	RecoveryMail    string `db:"recovery_mail"`
-	StatusTimestamp int8   `db:"status_timestamp"`
-	ChatInvite      int8   `db:"chat_invite"`
-	PhoneCall       int8   `db:"phone_call"`
-	Ttl             int32  `db:"ttl"`
-	TtlCreatedAt    int32  `db:"ttl_created_at"`
-	CreatedAt       string `db:"created_at"`
-	UpdatedAt       string `db:"updated_at"`
+	Id        int32  `db:"id"`
+	UserId    int32  `db:"user_id"`
+	KeyType   int8   `db:"key_type"`
+	Rules     string `db:"rules"`
+	CreatedAt string `db:"created_at"`
+	UpdatedAt string `db:"updated_at"`
 }

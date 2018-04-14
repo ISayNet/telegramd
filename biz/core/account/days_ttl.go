@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017, https://github.com/nebulaim
+ *  Copyright (c) 2018, https://github.com/nebulaim
  *  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,24 +15,17 @@
  * limitations under the License.
  */
 
-package rpc
+package account
 
 import (
-	"flag"
-	"github.com/golang/glog"
-	"github.com/nebulaim/telegramd/mtproto"
-	"google.golang.org/grpc"
-	"net"
+	"github.com/nebulaim/telegramd/biz/dal/dao"
 )
 
-func DoMainServer() {
-	flag.Parse()
-	lis, err := net.Listen("tcp", "localhost:10001")
-	if err != nil {
-		glog.Fatalf("failed to listen: %v", err)
-	}
-	var opts []grpc.ServerOption
-	grpcServer := grpc.NewServer(opts...)
-	mtproto.RegisterRPCContactsServer(grpcServer, &ContactsServiceImpl{})
-	grpcServer.Serve(lis)
+func SetAccountDaysTTL(userId int32, ttl int32) {
+	dao.GetUsersDAO(dao.DB_MASTER).UpdateAccountDaysTTL(ttl, userId)
+}
+
+func GetAccountDaysTTL(userId int32) int32 {
+	do := dao.GetUsersDAO(dao.DB_SLAVE).SelectAccountDaysTTL(userId)
+	return do.AccountDaysTtl
 }

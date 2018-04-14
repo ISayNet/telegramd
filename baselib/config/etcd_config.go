@@ -18,7 +18,7 @@
 package config
 
 import (
-	"github.com/nebulaim/telegramd/base/base"
+	"github.com/nebulaim/telegramd/baselib/base"
 )
 
 type EtcdConfig struct {

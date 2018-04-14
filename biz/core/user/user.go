@@ -22,6 +22,7 @@ import (
 	"github.com/nebulaim/telegramd/mtproto"
 	"github.com/nebulaim/telegramd/biz/dal/dataobject"
 	"github.com/nebulaim/telegramd/baselib/base"
+	"time"
 )
 
 //type accountData struct {
@@ -41,29 +42,11 @@ func (this *userData) ToUser() *mtproto.User {
 	return this.TLUser.To_User()
 }
 
-func CheckBannedByPhoneNumber(phoneNumber string) bool {
-	do := dao.GetUsersDAO(dao.DB_SLAVE).SelectByPhoneNumber(phoneNumber)
-	return do != nil && do.Banned != 0
-}
-
-func CheckPhoneNumberExist(phoneNumber string) bool {
-	return nil != dao.GetUsersDAO(dao.DB_SLAVE).SelectByPhoneNumber(phoneNumber)
-}
-
-func GetUserByPhoneNumber(phoneNumber string) *userData {
-	do := dao.GetUsersDAO(dao.DB_SLAVE).SelectByPhoneNumber(phoneNumber)
-	if do == nil {
-		return nil
-	} else {
-		data := &userData{ TLUser: &mtproto.TLUser{ Data2: &mtproto.User_Data{
-				Id:        do.Id,
-				FirstName: do.FirstName,
-				LastName:  do.LastName,
-		}}}
-		return data
-	}
-}
-
+//func CheckBannedByPhoneNumber(phoneNumber string) bool {
+//	do := dao.GetUsersDAO(dao.DB_SLAVE).SelectByPhoneNumber(phoneNumber)
+//	return do != nil && do.Banned != 0
+//}
+//
 func GetUser(userId int32) (user* mtproto.TLUser) {
 	usersDAO := dao.GetUsersDAO(dao.DB_SLAVE)
 	userDO := usersDAO.SelectById(userId)
@@ -88,22 +71,24 @@ func GetUsersBySelfAndIDList(selfUserId int32, userIdList []int32) (users []*mtp
 	if len(userIdList) == 0 {
 		users = []*mtproto.User{}
 	} else {
-		// usersDAO := dao.GetUsersDAO(dao.DB_SLAVE)
+		// TODO(@benqi):  需要优化，makeUserDataByDO需要查询用户状态以及获取Mutual和Contact状态信息而导致多次查询
 		userDOList := dao.GetUsersDAO(dao.DB_SLAVE).SelectUsersByIdList(userIdList)
 		users = make([]*mtproto.User, 0, len(userDOList))
 		for _, userDO := range userDOList {
-			// TODO(@benqi): fill bot, photo, about...
-			user := &mtproto.TLUser{Data2: &mtproto.User_Data{
-				Self:          selfUserId == userDO.Id,
-				Id:            userDO.Id,
-				AccessHash:    userDO.AccessHash,
-				FirstName:     userDO.FirstName,
-				LastName:      userDO.LastName,
-				Username:      userDO.Username,
-				Phone:         userDO.Phone,
-				Contact:       true,
-				MutualContact: true,
-			}}
+			user := makeUserDataByDO(selfUserId, &userDO)
+			//
+			//// TODO(@benqi): fill bot, photo, about...
+			//user := &mtproto.TLUser{Data2: &mtproto.User_Data{
+			//	Self:          selfUserId == userDO.Id,
+			//	Id:            userDO.Id,
+			//	AccessHash:    userDO.AccessHash,
+			//	FirstName:     userDO.FirstName,
+			//	LastName:      userDO.LastName,
+			//	Username:      userDO.Username,
+			//	Phone:         userDO.Phone,
+			//	Contact:       true,
+			//	MutualContact: true,
+			//}}
 			users = append(users, user.To_User())
 		}
 	}
@@ -213,3 +198,24 @@ func UpdateUserStatus(userId int32, lastSeenAt int64) {
 		presencesDAO.Insert(do)
 	}
 }
+
+func GetUserStatus(userId int32) *mtproto.UserStatus {
+	now := time.Now().Unix()
+	do := dao.GetUserPresencesDAO(dao.DB_SLAVE).SelectByUserID(userId)
+	if do == nil {
+		return mtproto.NewTLUserStatusEmpty().To_UserStatus()
+	}
+
+	if now <= do.LastSeenAt + 5*60 {
+		status := &mtproto.TLUserStatusOnline{Data2: &mtproto.UserStatus_Data{
+			Expires: int32(do.LastSeenAt + 5*30),
+		}}
+		return status.To_UserStatus()
+	} else {
+		status := &mtproto.TLUserStatusOffline{Data2: &mtproto.UserStatus_Data{
+			WasOnline: int32(do.LastSeenAt),
+		}}
+		return status.To_UserStatus()
+	}
+}
+

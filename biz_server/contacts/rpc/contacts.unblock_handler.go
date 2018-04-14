@@ -23,23 +23,61 @@ import (
 	"github.com/nebulaim/telegramd/grpc_util"
 	"github.com/nebulaim/telegramd/mtproto"
 	"golang.org/x/net/context"
-	"github.com/nebulaim/telegramd/biz/dal/dao"
+	"github.com/nebulaim/telegramd/biz/core/contact"
+	user2 "github.com/nebulaim/telegramd/biz/core/user"
+	"github.com/nebulaim/telegramd/biz_server/sync_client"
+	updates2 "github.com/nebulaim/telegramd/biz/core/update"
 )
 
 // contacts.unblock#e54100bd id:InputUser = Bool;
 func (s *ContactsServiceImpl) ContactsUnblock(ctx context.Context, request *mtproto.TLContactsUnblock) (*mtproto.Bool, error) {
 	md := grpc_util.RpcMetadataFromIncoming(ctx)
-	glog.Infof("ContactsUnblock - metadata: %s, request: %s", logger.JsonDebugData(md), logger.JsonDebugData(request))
+	glog.Infof("contacts.unblock#e54100bd - metadata: %s, request: %s", logger.JsonDebugData(md), logger.JsonDebugData(request))
 
-	switch request.GetId().GetConstructor() {
-	case mtproto.TLConstructor_CRC32_inputUserEmpty:
+	var (
+		blockedId int32
+		id = request.Id
+	)
+
+	switch id.GetConstructor() {
 	case mtproto.TLConstructor_CRC32_inputUserSelf:
-		dao.GetUserContactsDAO(dao.DB_MASTER).UpdateBlock(0, md.UserId, md.UserId)
+		blockedId = md.UserId
 	case mtproto.TLConstructor_CRC32_inputUser:
-		// TODO(@benqi): Check InputUser's userId and access_hash
-		dao.GetUserContactsDAO(dao.DB_MASTER).UpdateBlock(0, md.UserId, request.GetId().GetData2().GetUserId())
+		// Check access hash
+		if ok := user2.CheckAccessHashByUserId(id.GetData2().GetUserId(), id.GetData2().GetAccessHash()); !ok {
+			// TODO(@benqi): Add ACCESS_HASH_INVALID codes
+			err := mtproto.NewRpcError2(mtproto.TLRpcErrorCodes_BAD_REQUEST)
+			glog.Error(err, ": is access_hash error")
+			return nil, err
+		}
+
+		blockedId = id.GetData2().GetUserId()
+		// TODO(@benqi): contact exist
+	default:
+		// mtproto.TLConstructor_CRC32_inputUserEmpty:
+		err := mtproto.NewRpcError2(mtproto.TLRpcErrorCodes_BAD_REQUEST)
+		glog.Error(err, ": is inputUserEmpty")
+		return nil, err
 	}
 
-	glog.Infof("ContactsUnblock - reply: {true}")
-	return mtproto.ToBool(true), nil
+	contactLogic :=contact.MakeContactLogic(md.UserId)
+	unBlocked := contactLogic.UnBlockUser(blockedId)
+
+	if unBlocked {
+		// Sync unblocked: updateUserBlocked
+		updateUserUnBlocked := &mtproto.TLUpdateUserBlocked{Data2: &mtproto.Update_Data{
+			UserId: blockedId,
+			Blocked: mtproto.ToBool(false),
+		}}
+
+		unBlockedUpdates := updates2.NewUpdatesLogic(md.UserId)
+		unBlockedUpdates.AddUpdate(updateUserUnBlocked.To_Update())
+		unBlockedUpdates.AddUser(user2.GetUserById(md.UserId, blockedId).To_User())
+
+		// TODO(@benqi): handle seq
+		sync_client.GetSyncClient().SyncUpdatesData(md.AuthId, md.SessionId, blockedId, unBlockedUpdates.ToUpdates())
+	}
+
+	glog.Infof("contacts.unblock#e54100bd - reply: {%v}", unBlocked)
+	return mtproto.ToBool(unBlocked), nil
 }

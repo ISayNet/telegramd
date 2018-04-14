@@ -24,30 +24,41 @@ import (
 	"github.com/nebulaim/telegramd/mtproto"
 	"golang.org/x/net/context"
 	"github.com/nebulaim/telegramd/biz/core/account"
-	"github.com/nebulaim/telegramd/biz/base"
-	"github.com/nebulaim/telegramd/biz_server/sync_client"
+	// "github.com/nebulaim/telegramd/biz_server/sync_client"
+	// peer2 "github.com/nebulaim/telegramd/biz/core/peer"
 )
 
 // account.resetNotifySettings#db7e1747 = Bool;
 func (s *AccountServiceImpl) AccountResetNotifySettings(ctx context.Context, request *mtproto.TLAccountResetNotifySettings) (*mtproto.Bool, error) {
 	md := grpc_util.RpcMetadataFromIncoming(ctx)
-	glog.Infof("AccountResetNotifySettings - metadata: %s, request: %s", logger.JsonDebugData(md), logger.JsonDebugData(request))
+	glog.Infof("account.resetNotifySettings#db7e1747 - metadata: %s, request: %s", logger.JsonDebugData(md), logger.JsonDebugData(request))
 
-	// TODO(@benqi): Impl AccountResetNotifySettings logic
 	account.ResetNotifySettings(md.UserId)
-	peer := &base.PeerUtil{}
-	peer.PeerType = base.PEER_ALL
-	update := mtproto.NewTLUpdateNotifySettings()
-	update.SetPeer(peer.ToNotifyPeer())
-	updateSettings := mtproto.NewTLPeerNotifySettings()
-	updateSettings.SetShowPreviews(true)
-	updateSettings.SetSilent(false)
-	updateSettings.SetMuteUntil(0)
-	updateSettings.SetSound("default")
-	update.SetNotifySettings(updateSettings.To_PeerNotifySettings())
 
-	sync_client.GetSyncClient().PushToUserMeOneUpdateData(md.AuthId, md.SessionId, md.UserId, update.To_Update())
+	// TODO(@benqi): update notify setting
+	/*
+	 Android client source:
+		} else if (update instanceof TLRPC.TL_updateNotifySettings) {
+			TLRPC.TL_updateNotifySettings updateNotifySettings = (TLRPC.TL_updateNotifySettings) update;
+			if (update.notify_settings instanceof TLRPC.TL_peerNotifySettings && updateNotifySettings.peer instanceof TLRPC.TL_notifyPeer) {
+	           ......
+	        }
+	    }
+	 */
 
-	glog.Infof("AccountResetNotifySettings - reply: {true}")
+	//peer := &peer2.PeerUtil{}
+	//peer.PeerType = peer2.PEER_ALL
+	//update := mtproto.NewTLUpdateNotifySettings()
+	//update.SetPeer(peer.ToNotifyPeer())
+	//updateSettings := mtproto.NewTLPeerNotifySettings()
+	//updateSettings.SetShowPreviews(true)
+	//updateSettings.SetSilent(false)
+	//updateSettings.SetMuteUntil(0)
+	//updateSettings.SetSound("default")
+	//update.SetNotifySettings(updateSettings.To_PeerNotifySettings())
+	//
+	//sync_client.GetSyncClient().PushToUserMeOneUpdateData(md.AuthId, md.SessionId, md.UserId, update.To_Update())
+
+	glog.Infof("account.resetNotifySettings#db7e1747 - reply: {true}")
 	return mtproto.ToBool(true), nil
 }

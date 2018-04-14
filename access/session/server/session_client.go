@@ -135,6 +135,12 @@ func (c *sessionClient) sendDataListToClient(md *mtproto.ZProtoMetadata, message
  */
 func (c *sessionClient) onSessionClientData(sessDataList *sessionDataList) {
 	for _, message := range sessDataList.messages {
+
+		// TODO(@benqi): 暂时这么用
+		if c.authUserId == 0 {
+			c.authUserId = getUserIDByAuthKeyID(c.authKeyId)
+		}
+
 		// check new_session_created
 		if c.state == kSessionStateCreated {
 			c.onNewSessionCreated(message.MsgId, message.Seqno, message.Object)
@@ -315,6 +321,11 @@ func (c *sessionClient) onMsgResendReq(md *mtproto.ZProtoMetadata, msgId int64, 
 }
 
 func (c *sessionClient) onRpcRequest(md *mtproto.ZProtoMetadata, msgId int64, seqNo int32, request mtproto.TLObject) {
+	// TODO(@benqi): request error.
+	if request == nil {
+		return
+	}
+
 	glog.Infof("onRpcRequest - request: {%s}", request)
 
 	if c.sessionType == UNKNOWN {
@@ -342,10 +353,7 @@ func (c *sessionClient) onRpcRequest(md *mtproto.ZProtoMetadata, msgId int64, se
 
 	if err != nil {
 		glog.Error(err)
-		reply.Result = &mtproto.TLRpcError { Data2: &mtproto.RpcError_Data {
-			ErrorCode: mtproto.RPC_INTERNAL_ERROR,
-			ErrorMessage: "INTERNAL_ERROR",
-		}}
+		reply.Result = err.(*mtproto.TLRpcError)
 	} else {
 		glog.Infof("OnMessage - rpc_result: {%v}\n", rpcResult)
 		reply.Result = rpcResult

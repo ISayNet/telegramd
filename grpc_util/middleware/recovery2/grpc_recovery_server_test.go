@@ -21,7 +21,7 @@ import (
 	"testing"
 	"google.golang.org/grpc"
 	"context"
-	"github.com/nebulaim/telegramd/zproto"
+	"github.com/nebulaim/telegramd/grpc_util/middleware/examples/zproto"
 	"net"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -51,6 +51,10 @@ func unaryRecoveryHandler(ctx context.Context, p interface{}) (err error) {
 	return status.Errorf(codes.Unknown, "panic triggered: %v", p)
 }
 
+func unaryRecoveryHandler2(ctx context.Context, p interface{}) (err error) {
+	return status.Errorf(codes.Unknown, "panic triggered: %v", p)
+}
+
 func streamRecoveryHandler(stream grpc.ServerStream, p interface{}) (err error) {
 	return
 }
@@ -62,7 +66,7 @@ func TestRecoveryServer(t *testing.T) {
 		// glog.Fatalf("failed to listen: %v", err)
 	}
 
-	server := NewRecoveryServer(unaryRecoveryHandler, streamRecoveryHandler)
+	server := NewRecoveryServer2(unaryRecoveryHandler, unaryRecoveryHandler2, streamRecoveryHandler)
 	zproto.RegisterChatTestServer(server, &ChatTestServiceImpl{})
 	server.Serve(lis)
 }

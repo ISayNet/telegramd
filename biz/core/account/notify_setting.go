@@ -21,58 +21,29 @@ import (
 	"github.com/nebulaim/telegramd/biz/dal/dao"
 	"github.com/nebulaim/telegramd/biz/dal/dataobject"
 	"github.com/nebulaim/telegramd/biz/base"
-	base2 "github.com/nebulaim/telegramd/baselib/base"
 	"github.com/nebulaim/telegramd/mtproto"
+	base2 "github.com/nebulaim/telegramd/baselib/base"
 )
-//
-//const (
-//	TOKEN_TYPE_APNS = 1
-//	TOKEN_TYPE_GCM = 2
-//	TOKEN_TYPE_MPNS = 3
-//	TOKEN_TYPE_SIMPLE_PUSH = 4
-//	TOKEN_TYPE_UBUNTU_PHONE = 5
-//	TOKEN_TYPE_BLACKBERRY = 6
-//	// Android里使用
-//	TOKEN_TYPE_INTERNAL_PUSH = 7
-//)
-
-func RegisterDevice(authKeyId int64, userId int32, tokenType int8, token string) {
-	slave := dao.GetDevicesDAO(dao.DB_SLAVE)
-	master := dao.GetDevicesDAO(dao.DB_MASTER)
-	do := slave.SelectId(authKeyId, tokenType, token)
-	if do == nil {
-		do = &dataobject.DevicesDO{
-			AuthId: authKeyId,
-			UserId: userId,
-			TokenType: tokenType,
-			State: 0,
-			CreatedAt: base2.NowFormatYMDHMS(),
-		}
-		master.Insert(do)
-	} else {
-		master.UpdateStateById(1, do.Id)
-	}
-}
-
-func UnRegisterDevice(authKeyId int64, userId int32, tokenType int8, token string) bool {
-	master := dao.GetDevicesDAO(dao.DB_MASTER)
-	rows := master.UpdateState(tokenType, authKeyId, tokenType, token)
-	return rows == 1
-
-}
 
 func GetNotifySettings(userId int32, peer *base.PeerUtil) *mtproto.PeerNotifySettings {
 	do := dao.GetUserNotifySettingsDAO(dao.DB_SLAVE).SelectByPeer(userId, int8(peer.PeerType), peer.PeerId)
 
+	// var mute_until int32 = 0
 	if do == nil {
-		settings := mtproto.NewTLPeerNotifySettingsEmpty()
+		settings := &mtproto.TLPeerNotifySettings{Data2: &mtproto.PeerNotifySettings_Data{
+			ShowPreviews: true,
+			Silent:       false,
+			MuteUntil:    0,
+			Sound:        "default",
+		}}
 		return settings.To_PeerNotifySettings()
 	} else {
-		settings := mtproto.NewTLPeerNotifySettings()
-		settings.SetShowPreviews(do.ShowPreviews == 1)
-		settings.SetSilent(do.Silent == 1)
-		settings.SetMuteUntil(do.MuteUntil)
-		settings.SetSound(do.Sound)
+		settings := &mtproto.TLPeerNotifySettings{Data2: &mtproto.PeerNotifySettings_Data{
+			ShowPreviews: do.ShowPreviews == 1,
+			Silent:       do.Silent == 1,
+			MuteUntil:    do.MuteUntil,
+			Sound:        do.Sound,
+		}}
 		return settings.To_PeerNotifySettings()
 	}
 }
@@ -81,29 +52,25 @@ func SetNotifySettings(userId int32, peer *base.PeerUtil, settings *mtproto.TLIn
 	slave := dao.GetUserNotifySettingsDAO(dao.DB_SLAVE)
 	master := dao.GetUserNotifySettingsDAO(dao.DB_MASTER)
 
-	var showPreviews int8 = 0
-	var slient int8 = 0
-	if settings.GetShowPreviews() {
-		showPreviews = 1
-	}
-	if settings.GetSilent() {
-		slient = 1
-	}
+	var (
+		showPreviews = base2.BoolToInt8(settings.GetShowPreviews())
+		silent = base2.BoolToInt8(settings.GetSilent())
+	)
 
 	do := slave.SelectByPeer(userId, int8(peer.PeerType), peer.PeerId)
 	if do == nil {
-		do = &dataobject.UserNotifySettingsDO{}
-		do.UserId = userId
-		do.PeerType = int8(peer.PeerType)
-		do.PeerId = peer.PeerId
-		do.ShowPreviews = showPreviews
-		do.Silent = slient
-		do.MuteUntil = settings.GetMuteUntil()
-		do.Sound = settings.GetSound()
-
+		do = &dataobject.UserNotifySettingsDO{
+			UserId:       userId,
+			PeerType:     int8(peer.PeerType),
+			PeerId:       peer.PeerId,
+			ShowPreviews: showPreviews,
+			Silent:       silent,
+			MuteUntil:    settings.GetMuteUntil(),
+			Sound:        settings.GetSound(),
+		}
 		master.Insert(do)
 	} else {
-		master.UpdateByPeer(showPreviews, slient, settings.GetMuteUntil(), settings.GetSound(), 0, userId, int8(peer.PeerType), peer.PeerId)
+		master.UpdateByPeer(showPreviews, silent, settings.GetMuteUntil(), settings.GetSound(), 0, userId, int8(peer.PeerType), peer.PeerId)
 	}
 }
 

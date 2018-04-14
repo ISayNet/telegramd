@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017, https://github.com/nebulaim
+ *  Copyright (c) 2018, https://github.com/nebulaim
  *  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,8 +18,8 @@
 package dataobject
 
 type DevicesDO struct {
-	Id        int32  `db:"id"`
-	AuthId    int64  `db:"auth_id"`
+	Id        int64  `db:"id"`
+	AuthKeyId int64  `db:"auth_key_id"`
 	UserId    int32  `db:"user_id"`
 	TokenType int8   `db:"token_type"`
 	Token     string `db:"token"`

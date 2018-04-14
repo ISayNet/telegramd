@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017, https://github.com/nebulaim
+ *  Copyright (c) 2018, https://github.com/nebulaim
  *  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,24 +15,11 @@
  * limitations under the License.
  */
 
-package rpc
+package message
 
-import (
-	"flag"
-	"github.com/golang/glog"
-	"github.com/nebulaim/telegramd/mtproto"
-	"google.golang.org/grpc"
-	"net"
-)
-
-func DoMainServer() {
-	flag.Parse()
-	lis, err := net.Listen("tcp", "localhost:10001")
-	if err != nil {
-		glog.Fatalf("failed to listen: %v", err)
-	}
-	var opts []grpc.ServerOption
-	grpcServer := grpc.NewServer(opts...)
-	mtproto.RegisterRPCUpdatesServer(grpcServer, &UpdatesServiceImpl{})
-	grpcServer.Serve(lis)
+type MessageLogic struct {
+	// *mtproto.Message
+	// creatorId    int32
+	// Chat         *mtproto.TLChat
+	// Participants []*mtproto.ChatParticipant
 }

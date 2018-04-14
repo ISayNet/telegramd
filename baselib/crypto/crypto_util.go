@@ -21,6 +21,7 @@ import (
 	"crypto/sha256"
 	"crypto/sha1"
 	"crypto/rand"
+	"encoding/hex"
 )
 
 func Sha256Digest(data []byte) []byte {
@@ -37,4 +38,10 @@ func GenerateNonce(size int) []byte {
 	b := make([]byte, size)
 	_, _ = rand.Read(b)
 	return b
+}
+
+func GenerateStringNonce(size int) string {
+	b := make([]byte, size)
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
 }
